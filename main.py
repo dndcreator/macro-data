@@ -1,9 +1,13 @@
+from flask import Flask, jsonify
 import pandas as pd
 import yfinance as yf
 from datetime import datetime
 import os
 import boto3
 from io import BytesIO
+
+# 初始化 Flask 应用
+app = Flask(__name__)
 
 # 定义需要获取的标的
 TICKERS = {
@@ -81,8 +85,13 @@ def read_from_s3(bucket_name, file_name):
         print(f"从 S3 读取数据失败: {e}")
         return None
 
-# 主函数
-def main():
+# 定义路由
+@app.route("/")
+def index():
+    return jsonify({"message": "Welcome to the Macro Data API!"})
+
+@app.route("/update")
+def update_data():
     print("开始获取数据...")
     # 获取数据
     market_data = get_market_data()
@@ -101,7 +110,7 @@ def main():
     # 保存更新后的数据到 S3
     save_to_s3(updated_data, S3_BUCKET_NAME, S3_FILE_NAME)
 
-    print(f"数据已更新并保存到 S3: s3://{S3_BUCKET_NAME}/{S3_FILE_NAME}")
+    return jsonify({"message": f"数据已更新并保存到 S3: s3://{S3_BUCKET_NAME}/{S3_FILE_NAME}"})
 
 if __name__ == "__main__":
-    main()
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))

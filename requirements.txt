@@ -2,3 +2,5 @@ pandas
 yfinance
 boto3
 gunicorn
+openpyxl
+Flask
