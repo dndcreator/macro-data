@@ -58,8 +58,22 @@ def get_market_data():
         try:
             # 从雅虎财经获取数据
             ticker_data = yf.Ticker(ticker)
-            latest_price = ticker_data.history(period="1d")["Close"].iloc[-1]
-            data[name] = latest_price
+            
+            # 尝试获取当天数据
+            history = ticker_data.history(period="1d")
+            if not history.empty:
+                latest_price = history["Close"].iloc[-1]
+                data[name] = latest_price
+            else:
+                # 如果当天没有数据，获取最近一个交易日的数据
+                history = ticker_data.history(period="5d")  # 获取最近 5 天的数据
+                if not history.empty:
+                    latest_price = history["Close"].iloc[-1]
+                    data[name] = latest_price
+                    print(f"获取 {name} 数据失败: 无当天数据，使用最近交易日数据: {latest_price}")
+                else:
+                    print(f"获取 {name} 数据失败: 无可用数据")
+                    data[name] = None
         except Exception as e:
             print(f"获取 {name} 数据失败: {e}")
             data[name] = None
@@ -102,7 +116,7 @@ def update_data():
 
     # 从 S3 读取旧数据
     existing_data = read_from_s3(S3_BUCKET_NAME, S3_FILE_NAME)
-    if existing_data is not None:
+    if existing_data is not None and not existing_data.empty:
         updated_data = pd.concat([existing_data, new_row])
     else:
         updated_data = new_row
@@ -112,10 +126,7 @@ def update_data():
 
     return jsonify({"message": f"数据已更新并保存到 S3: s3://{S3_BUCKET_NAME}/{S3_FILE_NAME}"})
 
+# 支持直接运行脚本
 if __name__ == "__main__":
     with app.app_context():
         update_data()
-
-# 移除 app.run()，因为 Gunicorn 会直接运行应用
-# if __name__ == "__main__":
-#     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
