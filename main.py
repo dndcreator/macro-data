@@ -112,5 +112,6 @@ def update_data():
 
     return jsonify({"message": f"数据已更新并保存到 S3: s3://{S3_BUCKET_NAME}/{S3_FILE_NAME}"})
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+# 移除 app.run()，因为 Gunicorn 会直接运行应用
+# if __name__ == "__main__":
+#     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
